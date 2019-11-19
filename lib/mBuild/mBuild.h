@@ -8,6 +8,7 @@ struct PackData
     uint8_t idx;
     uint8_t service;
     uint8_t subservice;
+    uint8_t cmd;
     uint8_t datalen;
     uint8_t* data;
     uint8_t checksum;
@@ -19,10 +20,10 @@ class mBuild
         mBuild();
         static void log(String msg);
         static void init();
-        static void boardcast(void (*callback)(void));
+        static void broadcast(void (*callback)(PackData*));
         void begin(uint8_t idx,uint8_t service,uint8_t subservice);
-        void request(uint8_t cmd,uint8_t* data,void* callback);
-        void call(uint8_t cmd,uint8_t* data);
+        void request(uint8_t cmd,uint8_t* data,uint8_t datalen,void(*callback)(PackData*));
+        void call(uint8_t cmd,uint8_t* data,uint8_t datalen);
     private:
         uint8_t _idx;
         uint8_t _service;

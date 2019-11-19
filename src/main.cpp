@@ -1,19 +1,36 @@
 #include <Arduino.h>
 #include "mBuild.h"
-mBuild *slider;
-void cb()
+mBuild slider;
+mBuild motor;
+struct PackData;
+void cb(PackData *pack)
 {
-    mBuild::log("hello");
+    
+}
+void sliderHandle(PackData *pack){
+    String msg = "slider:";
+    msg += pack->data[0];
+    msg += " freeMemory:";
+    msg += ESP.getFreeHeap();
+    mBuild::log(msg);
+    uint8_t*speed = (uint8_t*)malloc(2);
+    speed[0] = pack->data[0];
+    speed[1] = 0x0;
+    motor.call(0x1,speed,2);
+    free(speed);
 }
 void setup()
 {
     mBuild::init();
-    mBuild::boardcast(&cb);
-    // slider = new mBuild();
-    // slider->begin(0x1,0x64,0xd);
+    mBuild::broadcast(&cb);
+    slider.begin(0x1,0x64,0xd);
+    motor.begin(0x2,0x62,0x9);
 }
 void loop()
 {
+    slider.request(0x1,NULL,0,&sliderHandle);
+    delay(50);
+
 }
 /**
  * 
