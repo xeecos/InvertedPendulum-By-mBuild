@@ -11,6 +11,7 @@ struct PackData
     uint8_t cmd;
     uint8_t datalen;
     uint8_t* data;
+    long value;
     uint8_t checksum;
     uint8_t footer = 0xf7;
 };

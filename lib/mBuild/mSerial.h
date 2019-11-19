@@ -11,6 +11,11 @@ struct CallbackData
     unsigned long time;
     void(*callback)(PackData*);
 };
+union BytesTran
+{
+    unsigned long longValue;
+    unsigned char bytes[4];
+};
 class mSerial
 {
     public:

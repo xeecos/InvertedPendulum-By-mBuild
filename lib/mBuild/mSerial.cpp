@@ -92,15 +92,12 @@ void mSerial::parse()
     pack->idx = buffer.at(1);
     pack->service = buffer.at(2);
     pack->subservice = buffer.at(3);
+    pack->datalen = 0;
     switch(pack->service)
     {
         case 0x10:
         {
-            pack->datalen = 3;
-            pack->data = (uint8_t*)malloc(3);
-            pack->data[0] = buffer.at(3);
-            pack->data[1] = buffer.at(4);
-            pack->data[2] = buffer.at(1);
+            pack->value = buffer.at(1);
             pack->idx = 0xff;
             pack->checksum = buffer.at(5);
             pack->footer = buffer.at(6);
@@ -108,14 +105,29 @@ void mSerial::parse()
         break;
         case 0x64:
         {
-            if(pack->subservice==0xd)
+            switch(pack->subservice)
             {
-                    pack->datalen = 1;
+                case 0xd:
+                {
                     pack->cmd = buffer.at(4);
-                    pack->data = (uint8_t*)malloc(1);
-                    pack->data[0] = buffer.at(5);
+                    pack->value = buffer.at(5);
                     pack->checksum = buffer.at(6);
                     pack->footer = buffer.at(7);
+                }
+                break;
+                case 0xe:
+                {
+                    pack->cmd = buffer.at(4);
+                    BytesTran tran;
+                    tran.bytes[0]=(buffer.at(5)&0x7f)+((buffer.at(6)<<7)&0xf0);
+                    tran.bytes[1]=((buffer.at(6)>>1)&0x7f)+((buffer.at(7)<<6)&0xf0);
+                    tran.bytes[2]=((buffer.at(7)>>2)&0x7f)+((buffer.at(8)<<5)&0xf0);
+                    tran.bytes[3]=((buffer.at(8)>>3)&0x7f)+((buffer.at(9)<<4)&0xf0);
+                    pack->value = tran.longValue;
+                    pack->checksum = buffer.at(10);
+                    pack->footer = buffer.at(11);
+                }
+                break;
             }
         }
         break;
