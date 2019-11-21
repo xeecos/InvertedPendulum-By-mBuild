@@ -5,23 +5,29 @@
 #define DEBUG 0
 class mBuild;
 struct PackData;
+union Bytes2Long
+{
+    unsigned long value;
+    unsigned char bytes[4];
+};
+union Bytes2Short
+{
+    int16_t value;
+    unsigned char bytes[2];
+};
+
 struct CallbackData
 {
     uint8_t idx;
     unsigned long time;
-    void(*callback)(PackData*);
-};
-union BytesTran
-{
-    unsigned long longValue;
-    unsigned char bytes[4];
+    mBuild *module;
 };
 class mSerial
 {
     public:
         static mSerial* shared();
         mSerial();
-        void request(PackData* pack, void(*callback)(PackData*));
+        void request(PackData* pack, mBuild*module);
         void call(PackData* pack);
         void log(String msg);
     private:

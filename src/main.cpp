@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "mBuild.h"
-mBuild slider;
-mBuild motor;
+mSlider slider;
+mDCMotor motor;
 mBuild angle;
 struct PackData;
 void cb(PackData *pack)
@@ -10,15 +10,10 @@ void cb(PackData *pack)
 }
 void sliderHandle(PackData *pack){
     String msg = "slider:";
-    msg += pack->data[0];
+    msg += pack->value;
     msg += " freeMemory:";
     msg += ESP.getFreeHeap();
     mBuild::log(msg);
-    uint8_t*speed = (uint8_t*)malloc(2);
-    speed[0] = pack->data[0];
-    speed[1] = 0x0;
-    motor.call(0x1,speed,2);
-    free(speed);
 }
 void angleHandle(PackData *pack){
     String msg = "angle:";
@@ -30,19 +25,24 @@ void angleHandle(PackData *pack){
 void setup()
 {
     mBuild::init();
-    mBuild::broadcast(&cb);
-    // slider.begin(0x1,0x64,0xd);
-    // motor.begin(0x2,0x62,0x9);
-    angle.begin(0x1,0x64,0xe);
-    // uint8_t*data = (uint8_t*)malloc(1);
-    // data[0] = 0x0;
-    // angle.call(0x7f,data,1);
-    // free(data);
+    mBuild::broadcast();
+    slider.begin(0x1);
+    motor.begin(0x2);
+    // angle.begin(0x1,0x64,0xe);
 }
 void loop()
 {
-    // slider.request(0x1,NULL,0,&sliderHandle);
-    angle.request(0x1,NULL,0,&angleHandle);
-    delay(200);
-
+    motor.setPower(slider.getSync());
+    delay(100);
+    // for(int i=0;i<7;i++){
+    //     motor.setPower(i*10);
+    //     delay(500);
+    // }
+    // delay(1000);
+    // for(int i=0;i<7;i++){
+    //     motor.setPower(60-i*10);
+    //     delay(500);
+    // }
+    // motor.setPower(0);
+    // delay(2000);
 }

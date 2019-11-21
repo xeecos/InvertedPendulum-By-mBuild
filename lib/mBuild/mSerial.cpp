@@ -24,12 +24,12 @@ mSerial::mSerial()
 }
 
 
-void mSerial::request(PackData *pack,void(*callback)(PackData*))
+void mSerial::request(PackData *pack,mBuild*module)
 {
     if(!isExistCallback(pack->idx)){
         CallbackData *cb = new CallbackData();
         cb->idx = pack->idx;
-        cb->callback = callback;
+        cb->module = module;
         cb->time = millis();
         _callbacks.push_back(cb);
     }
@@ -118,12 +118,12 @@ void mSerial::parse()
                 case 0xe:
                 {
                     pack->cmd = buffer.at(4);
-                    BytesTran tran;
+                    Bytes2Long tran;
                     tran.bytes[0]=(buffer.at(5)&0x7f)+((buffer.at(6)<<7)&0xf0);
                     tran.bytes[1]=((buffer.at(6)>>1)&0x7f)+((buffer.at(7)<<6)&0xf0);
                     tran.bytes[2]=((buffer.at(7)>>2)&0x7f)+((buffer.at(8)<<5)&0xf0);
                     tran.bytes[3]=((buffer.at(8)>>3)&0x7f)+((buffer.at(9)<<4)&0xf0);
-                    pack->value = tran.longValue;
+                    pack->value = tran.value;
                     pack->checksum = buffer.at(10);
                     pack->footer = buffer.at(11);
                 }
@@ -136,7 +136,7 @@ void mSerial::parse()
     {
         if(_callbacks.at(i)->idx==pack->idx)
         {
-            _callbacks.at(i)->callback(pack);
+            _callbacks.at(i)->module->resp(pack);
             free(_callbacks.at(i));
             _callbacks.erase(_callbacks.begin()+i);
             break;
