@@ -169,7 +169,7 @@ bool mSerial::isExistCallback(uint8_t idx)
 }
 void* mSerial::loop_thread(void *threadid)
 {
-    mSerial::shared()->log("start thread!");
+    mSerial::shared()->log("start serial thread!");
     while(true) {
         mSerial::shared()->available();
         vTaskDelay(1);

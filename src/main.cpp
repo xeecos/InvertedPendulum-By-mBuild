@@ -1,12 +1,15 @@
 #include <Arduino.h>
+#include "mBleUart.h"
 #include "mBuild.h"
 mSlider slider;
 mDCMotor motor;
 mBuild angle;
 struct PackData;
-void cb(PackData *pack)
+void cb(std::string msg)
 {
-    
+    String m = "";
+    m+=msg.c_str();
+    mBuild::log(m);
 }
 void sliderHandle(PackData *pack){
     String msg = "slider:";
@@ -26,6 +29,8 @@ void setup()
 {
     mBuild::init();
     mBuild::broadcast();
+    mBleUart::shared()->begin("hello");
+    mBleUart::shared()->onReceived(&cb);
     slider.begin(0x1);
     motor.begin(0x2);
     // angle.begin(0x1,0x64,0xe);
@@ -34,15 +39,4 @@ void loop()
 {
     motor.setPower(slider.getSync());
     delay(100);
-    // for(int i=0;i<7;i++){
-    //     motor.setPower(i*10);
-    //     delay(500);
-    // }
-    // delay(1000);
-    // for(int i=0;i<7;i++){
-    //     motor.setPower(60-i*10);
-    //     delay(500);
-    // }
-    // motor.setPower(0);
-    // delay(2000);
 }
