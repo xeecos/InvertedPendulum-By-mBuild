@@ -2,6 +2,7 @@
 #define __MSERIAL__
 #include <Arduino.h>
 #include "mBuild.h"
+#include "mBleUart.h"
 #define DEBUG 0
 class mBuild;
 struct PackData;

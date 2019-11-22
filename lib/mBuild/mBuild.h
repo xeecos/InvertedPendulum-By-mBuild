@@ -42,8 +42,33 @@ class mDCMotor:public mBuild
         void begin(uint8_t idx);
         void setPower(int8_t power);
 };
-
+class mRGBStrip:public mBuild
+{
+    public:
+        void begin(uint8_t idx);
+        void setColor(uint8_t index,uint8_t red, uint8_t green, uint8_t blue);
+        void setColor(uint8_t index,uint32_t color);
+};
+class mLED8x16:public mBuild
+{
+    public:
+        void begin(uint8_t idx);
+        void setPixels(uint8_t*pixels);
+        void setPixel(uint8_t x, uint8_t y, uint8_t on);
+        void invertPixel(uint8_t x, uint8_t y);
+        void setText(String text);
+        void setText(uint8_t x, uint8_t y,String text);
+        void clear();
+};
 class mSlider:public mBuild
+{
+    public:
+        void begin(uint8_t idx);
+        void get(void(*callback)(PackData*));
+        uint8_t getSync();
+};
+
+class mAngle:public mBuild
 {
     public:
         void begin(uint8_t idx);

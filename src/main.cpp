@@ -1,14 +1,14 @@
 #include <Arduino.h>
 #include "mBleUart.h"
 #include "mBuild.h"
-mSlider slider;
-mDCMotor motor;
-mBuild angle;
-struct PackData;
+mAngle angle;
+mLED8x16 ledmatrix;
 void cb(std::string msg)
 {
     String m = "";
     m+=msg.c_str();
+    m += " freeMemory:";
+    m += ESP.getFreeHeap();
     mBuild::log(m);
 }
 void sliderHandle(PackData *pack){
@@ -29,14 +29,14 @@ void setup()
 {
     mBuild::init();
     mBuild::broadcast();
-    mBleUart::shared()->begin("hello");
-    mBleUart::shared()->onReceived(&cb);
-    slider.begin(0x1);
-    motor.begin(0x2);
-    // angle.begin(0x1,0x64,0xe);
+    delay(1000);
+    angle.begin(0x1);
+    ledmatrix.begin(0x2);
 }
 void loop()
 {
-    motor.setPower(slider.getSync());
+    String msg = "";
+    msg+=angle.getSync();
+    ledmatrix.setText(msg);
     delay(100);
 }
