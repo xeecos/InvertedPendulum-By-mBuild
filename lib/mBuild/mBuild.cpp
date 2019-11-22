@@ -29,7 +29,7 @@ void mBuild::setup(uint8_t idx,uint8_t service,uint8_t subservice)
     _subservice = subservice;
 }
 
-void mBuild::request(uint8_t cmd,uint8_t* data,uint8_t datalen,void(*callback)(PackData*))
+void mBuild::request(uint8_t cmd,uint8_t* data,uint8_t datalen)
 {
     PackData *pack = new PackData();
     pack->idx = _idx;
@@ -43,7 +43,6 @@ void mBuild::request(uint8_t cmd,uint8_t* data,uint8_t datalen,void(*callback)(P
             pack->data[i] = data[i];
         }
     }
-    _callback = callback;
     mSerial::shared()->request(pack,this);
 }
 
@@ -68,13 +67,10 @@ void mBuild::resp(PackData*pack)
 {
     _value = pack->value;
     _isAvailable = true;
-    if(_callback!=NULL)
-    {
-        _callback(pack);
-    }
+    response(pack);
 }
 
-long mBuild::readValue()
+uint64_t mBuild::readValue()
 {
     _isAvailable = false;
     return _value;
@@ -213,12 +209,13 @@ void mSlider::begin(uint8_t idx)
 
 void mSlider::get(void(*callback)(PackData*))
 {
-    mBuild::request(0x1,NULL,0,callback);
+    respValue = callback;
+    mBuild::request(0x1,NULL,0);
 }
 
 uint8_t mSlider::getSync()
 {
-    mBuild::request(0x1,NULL,0,NULL);
+    mBuild::request(0x1,NULL,0);
     while(available()){
         break;
     }
@@ -238,14 +235,95 @@ void mAngle::begin(uint8_t idx)
 
 void mAngle::get(void(*callback)(PackData*))
 {
-    mBuild::request(0x1,NULL,0,callback);
+    respValue = callback;
+    mBuild::request(0x1,NULL,0);
 }
 
 uint8_t mAngle::getSync()
 {
-    mBuild::request(0x1,NULL,0,NULL);
+    mBuild::request(0x1,NULL,0);
     while(available()){
         break;
     }
     return readValue();
+}
+
+/**
+ * 
+ * DualRGBColor Sensor
+ * 
+ * */
+void mDualRGBColor::begin(uint8_t idx)
+{
+    mBuild::setup(idx,0x63,0x11);
+}
+void mDualRGBColor::getRGB(void(*callback)(DualRGBColor))
+{
+    respColor = callback;
+    mBuild::request(0x8,NULL,0);
+}
+DualRGBColor mDualRGBColor::getRGBSync()
+{
+    mBuild::request(0x8,NULL,0);
+    while(available()){
+        break;
+    }
+    uint64_t v = readValue();
+    uint32_t c1 = v&0xffffff;
+    uint32_t c2 = (v>>24)&0xffffff;
+    _color.r1 = (c1>>16)&0xff;
+    _color.g1 = (c1>>8)&0xff;
+    _color.b1 = c1&0xff;
+    _color.r2 = (c2>>16)&0xff;
+    _color.g2 = (c2>>8)&0xff;
+    _color.b2 = c2&0xff;
+    return _color;
+}
+void mDualRGBColor::getLight(void(*callback)(DualRGBColor))
+{
+    respColor = callback;
+    mBuild::request(0x3,NULL,0);
+}
+DualRGBColor mDualRGBColor::getLightSync()
+{
+    mBuild::request(0x3,NULL,0);
+    while(available()){
+        break;
+    }
+    uint16_t v = readValue();
+    _color.adc1 = v&0xff;
+    _color.adc2 = (v>>8)&0xff;
+    return _color;
+}
+void mDualRGBColor::getEvm(void(*callback)(DualRGBColor))
+{
+    respColor = callback;
+    mBuild::request(0x9,NULL,0);
+}
+DualRGBColor mDualRGBColor::getEvmSync()
+{
+    mBuild::request(0x9,NULL,0);
+    while(available()){
+        break;
+    }
+    uint16_t v = readValue();
+    _color.evm1 = v&0xff;
+    _color.evm2 = (v>>8)&0xff;
+    return _color;
+}
+void mDualRGBColor::getRef(void(*callback)(DualRGBColor))
+{
+    respColor = callback;
+    mBuild::request(0xa,NULL,0);
+}
+DualRGBColor mDualRGBColor::getRefSync()
+{
+    mBuild::request(0xa,NULL,0);
+    while(available()){
+        break;
+    }
+    uint16_t v = readValue();
+    _color.ref1 = v&0xff;
+    _color.ref2 = (v>>8)&0xff;
+    return _color;
 }

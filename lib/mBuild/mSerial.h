@@ -8,8 +8,8 @@ class mBuild;
 struct PackData;
 union Bytes2Long
 {
-    unsigned long value;
-    unsigned char bytes[4];
+    uint64_t value;
+    unsigned char bytes[8];
 };
 union Bytes2Short
 {
