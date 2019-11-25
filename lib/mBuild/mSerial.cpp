@@ -88,91 +88,19 @@ void mSerial::parse()
 {
     unsigned long time = millis();
     PackData *pack = new PackData();
+    uint8_t count = buffer.size();
     pack->header = buffer.at(0);
     pack->idx = buffer.at(1);
     pack->service = buffer.at(2);
     pack->subservice = buffer.at(3);
-    pack->datalen = 0;
-    switch(pack->service)
+    pack->data = (uint8_t*)malloc(count-6);
+    pack->datalen = count-6;
+    for(int i=0;i<pack->datalen;i++)
     {
-        case 0x10:
-        {
-            pack->value = buffer.at(1);
-            pack->idx = 0xff;
-            pack->checksum = buffer.at(5);
-            pack->footer = buffer.at(6);
-        }
-        break;
-        case 0x63:
-        {
-
-            switch(pack->subservice)
-            {
-                case 0x11:
-                {
-                    pack->cmd = buffer.at(4);
-                    switch(pack->cmd){
-                        case 0x3:
-                        case 0x9:
-                        case 0xa:{
-                            Bytes2Short tran;
-                            tran.bytes[0] = (buffer.at(5)&0x7f)+((buffer.at(6)<<7)&0xf0);
-                            tran.bytes[1] = (buffer.at(7)&0x7f)+((buffer.at(8)<<7)&0xf0);
-                            pack->value = tran.value;
-                            pack->checksum = buffer.at(9);
-                            pack->footer = buffer.at(10);
-                        }
-                        break;
-                        case 0x8:{
-                            Bytes2Long tran;
-                            tran.bytes[2] = (buffer.at(5)&0x7f)+((buffer.at(6)<<7)&0xf0);
-                            tran.bytes[1] = (buffer.at(7)&0x7f)+((buffer.at(8)<<7)&0xf0);
-                            tran.bytes[0] = (buffer.at(9)&0x7f)+((buffer.at(10)<<7)&0xf0);
-                            tran.bytes[5] = (buffer.at(11)&0x7f)+((buffer.at(12)<<7)&0xf0);
-                            tran.bytes[4] = (buffer.at(13)&0x7f)+((buffer.at(14)<<7)&0xf0);
-                            tran.bytes[3] = (buffer.at(15)&0x7f)+((buffer.at(16)<<7)&0xf0);
-                            tran.bytes[6] = tran.bytes[7] = 0;
-                            pack->value = tran.value;
-                            pack->checksum = buffer.at(17);
-                            pack->footer = buffer.at(18);
-                        }
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-        break;
-        case 0x64:
-        {
-            switch(pack->subservice)
-            {
-                case 0xd:
-                {
-                    pack->cmd = buffer.at(4);
-                    pack->value = buffer.at(5);
-                    pack->checksum = buffer.at(6);
-                    pack->footer = buffer.at(7);
-                }
-                break;
-                case 0xe:
-                {
-                    pack->cmd = buffer.at(4);
-                    Bytes2Long tran;
-                    tran.bytes[0]=(buffer.at(5)&0x7f)+((buffer.at(6)<<7)&0xf0);
-                    tran.bytes[1]=((buffer.at(6)>>1)&0x7f)+((buffer.at(7)<<6)&0xf0);
-                    tran.bytes[2]=((buffer.at(7)>>2)&0x7f)+((buffer.at(8)<<5)&0xf0);
-                    tran.bytes[3]=((buffer.at(8)>>3)&0x7f)+((buffer.at(9)<<4)&0xf0);
-                    tran.bytes[4] = tran.bytes[5] = tran.bytes[6] = tran.bytes[7] = 0;
-                    pack->value = tran.value;
-                    pack->checksum = buffer.at(10);
-                    pack->footer = buffer.at(11);
-                }
-                break;
-            }
-        }
-        break;
+        pack->data[i] = buffer.at(i+4);
     }
+    pack->checksum = buffer.at(count-2);
+    pack->footer = buffer.at(count-1);
     for(int i=0,count=_callbacks.size();i<count;i++)
     {
         if(_callbacks.at(i)->idx==pack->idx)
@@ -183,7 +111,6 @@ void mSerial::parse()
             break;
         }
     }
-
     for(int i=0,count=_callbacks.size();i<count;i++)
     {
         int t = time-_callbacks.at(i)->time;

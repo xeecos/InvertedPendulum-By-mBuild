@@ -11,7 +11,6 @@ struct PackData
     uint8_t cmd;
     uint8_t datalen;
     uint8_t* data;
-    uint64_t value;
     uint8_t checksum;
     uint8_t footer = 0xf7;
 };
@@ -30,6 +29,18 @@ struct DualRGBColor
     uint8_t ref1;
     uint8_t ref2;
 };
+
+union Bytes2Long
+{
+    uint64_t value;
+    unsigned char bytes[8];
+};
+union Bytes2Short
+{
+    int16_t value;
+    unsigned char bytes[2];
+};
+
 class mBuild
 {
     public:
@@ -47,9 +58,7 @@ class mBuild
         uint8_t _service;
         uint8_t _subservice;
         void (*_callback)(PackData*);
-        uint64_t _value;
         bool _isAvailable;
-        uint64_t readValue();
         bool available();
 };
 
@@ -94,28 +103,38 @@ class mSlider:public mBuild
 {
     public:
         void begin(uint8_t idx);
-        void get(void(*callback)(PackData*));
+        void get(void(*callback)(uint8_t value));
         uint8_t getSync();
         void response(PackData*pack) override
         {
-            respValue(pack);
+            _value = pack->data[1];
+            if(respValue!=NULL)respValue(_value);
         }
     private:
-        void (*respValue)(PackData*);
+        void (*respValue)(uint8_t value);
+        uint8_t _value;
 };
 
 class mAngle:public mBuild
 {
     public:
         void begin(uint8_t idx);
-        void get(void(*callback)(PackData*));
-        uint8_t getSync();
+        void get(void(*callback)(long));
+        long getSync();
         void response(PackData*pack) override
         {
-            respValue(pack);
+            Bytes2Long tran;
+            tran.bytes[0]=(pack->data[1]&0x7f)+((pack->data[2]<<7)&0xf0);
+            tran.bytes[1]=((pack->data[2]>>1)&0x7f)+((pack->data[3]<<6)&0xf0);
+            tran.bytes[2]=((pack->data[3]>>2)&0x7f)+((pack->data[4]<<5)&0xf0);
+            tran.bytes[3]=((pack->data[4]>>3)&0x7f)+((pack->data[5]<<4)&0xf0);
+            tran.bytes[4] = tran.bytes[5] = tran.bytes[6] = tran.bytes[7] = 0;
+            _value = tran.value;
+            if(respValue!=NULL)respValue(_value);
         }
     private:
-        void (*respValue)(PackData*);
+        void (*respValue)(long);
+        long _value;
 };
 
 class mDualRGBColor:public mBuild
@@ -132,43 +151,35 @@ class mDualRGBColor:public mBuild
         DualRGBColor getRefSync();
         void response(PackData*pack) override
         {
-            switch(pack->cmd){
+            switch(pack->data[0]){//cmd
                 case 0x3:
                 {
-                    uint16_t v = pack->value;
-                    _color.adc1 = v&0xff;
-                    _color.adc2 = (v>>8)&0xff;
-                }
-                break;
-                case 0x8:
-                {
-                    uint64_t v = pack->value;
-                    uint32_t c1 = v&0xffffff;
-                    uint32_t c2 = (v>>24)&0xffffff;
-                    _color.r1 = (c1>>16)&0xff;
-                    _color.g1 = (c1>>8)&0xff;
-                    _color.b1 = c1&0xff;
-                    _color.r2 = (c2>>16)&0xff;
-                    _color.g2 = (c2>>8)&0xff;
-                    _color.b2 = c2&0xff;
+                    _color.adc1 = (pack->data[1]&0x7f)+((pack->data[2]<<7)&0xf0);
+                    _color.adc2 = (pack->data[3]&0x7f)+((pack->data[4]<<7)&0xf0);
                 }
                 break;
                 case 0x9:
                 {
-                    uint16_t v = pack->value;
-                    _color.evm1 = v&0xff;
-                    _color.evm2 = (v>>8)&0xff;
+                    _color.evm1 = (pack->data[1]&0x7f)+((pack->data[2]<<7)&0xf0);
+                    _color.evm2 = (pack->data[3]&0x7f)+((pack->data[4]<<7)&0xf0);
                 }
                 break;
-                case 0xa:
-                {
-                    uint16_t v = pack->value;
-                    _color.ref1 = v&0xff;
-                    _color.ref2 = (v>>8)&0xff;
+                case 0xa:{
+                    _color.ref1 = (pack->data[1]&0x7f)+((pack->data[2]<<7)&0xf0);
+                    _color.ref2 = (pack->data[3]&0x7f)+((pack->data[4]<<7)&0xf0);
+                }
+                break;
+                case 0x8:{
+                    _color.r1 = (pack->data[1]&0x7f)+((pack->data[2]<<7)&0xf0);
+                    _color.g1 = (pack->data[3]&0x7f)+((pack->data[4]<<7)&0xf0);
+                    _color.b1 = (pack->data[5]&0x7f)+((pack->data[6]<<7)&0xf0);
+                    _color.r2 = (pack->data[7]&0x7f)+((pack->data[8]<<7)&0xf0);
+                    _color.g2 = (pack->data[9]&0x7f)+((pack->data[10]<<7)&0xf0);
+                    _color.b2 = (pack->data[11]&0x7f)+((pack->data[12]<<7)&0xf0);
                 }
                 break;
             }
-            respColor(_color);
+            if(respColor!=NULL)respColor(_color);
         };
     private:
         DualRGBColor _color;

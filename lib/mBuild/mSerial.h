@@ -6,16 +6,6 @@
 #define DEBUG 0
 class mBuild;
 struct PackData;
-union Bytes2Long
-{
-    uint64_t value;
-    unsigned char bytes[8];
-};
-union Bytes2Short
-{
-    int16_t value;
-    unsigned char bytes[2];
-};
 
 struct CallbackData
 {

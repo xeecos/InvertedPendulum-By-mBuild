@@ -65,15 +65,8 @@ void mBuild::call(uint8_t cmd,uint8_t* data,uint8_t datalen)
 
 void mBuild::resp(PackData*pack)
 {
-    _value = pack->value;
-    _isAvailable = true;
     response(pack);
-}
-
-uint64_t mBuild::readValue()
-{
-    _isAvailable = false;
-    return _value;
+    _isAvailable = true;
 }
 
 bool mBuild::available()
@@ -207,7 +200,7 @@ void mSlider::begin(uint8_t idx)
     mBuild::setup(idx,0x64,0x0d);
 }
 
-void mSlider::get(void(*callback)(PackData*))
+void mSlider::get(void(*callback)(uint8_t))
 {
     respValue = callback;
     mBuild::request(0x1,NULL,0);
@@ -219,7 +212,7 @@ uint8_t mSlider::getSync()
     while(available()){
         break;
     }
-    return readValue();
+    return _value;
 }
 
 /**
@@ -233,19 +226,19 @@ void mAngle::begin(uint8_t idx)
     mBuild::setup(idx,0x64,0x0e);
 }
 
-void mAngle::get(void(*callback)(PackData*))
+void mAngle::get(void(*callback)(long))
 {
     respValue = callback;
     mBuild::request(0x1,NULL,0);
 }
 
-uint8_t mAngle::getSync()
+long mAngle::getSync()
 {
     mBuild::request(0x1,NULL,0);
     while(available()){
         break;
     }
-    return readValue();
+    return _value;
 }
 
 /**
@@ -268,15 +261,6 @@ DualRGBColor mDualRGBColor::getRGBSync()
     while(available()){
         break;
     }
-    uint64_t v = readValue();
-    uint32_t c1 = v&0xffffff;
-    uint32_t c2 = (v>>24)&0xffffff;
-    _color.r1 = (c1>>16)&0xff;
-    _color.g1 = (c1>>8)&0xff;
-    _color.b1 = c1&0xff;
-    _color.r2 = (c2>>16)&0xff;
-    _color.g2 = (c2>>8)&0xff;
-    _color.b2 = c2&0xff;
     return _color;
 }
 void mDualRGBColor::getLight(void(*callback)(DualRGBColor))
@@ -290,9 +274,6 @@ DualRGBColor mDualRGBColor::getLightSync()
     while(available()){
         break;
     }
-    uint16_t v = readValue();
-    _color.adc1 = v&0xff;
-    _color.adc2 = (v>>8)&0xff;
     return _color;
 }
 void mDualRGBColor::getEvm(void(*callback)(DualRGBColor))
@@ -306,9 +287,6 @@ DualRGBColor mDualRGBColor::getEvmSync()
     while(available()){
         break;
     }
-    uint16_t v = readValue();
-    _color.evm1 = v&0xff;
-    _color.evm2 = (v>>8)&0xff;
     return _color;
 }
 void mDualRGBColor::getRef(void(*callback)(DualRGBColor))
@@ -322,8 +300,75 @@ DualRGBColor mDualRGBColor::getRefSync()
     while(available()){
         break;
     }
-    uint16_t v = readValue();
-    _color.ref1 = v&0xff;
-    _color.ref2 = (v>>8)&0xff;
     return _color;
 }
+/**
+ * 
+    switch(pack->service)
+    {
+        case 0x10:
+        {
+            pack->value = buffer.at(1);
+            pack->idx = 0xff;
+            pack->checksum = buffer.at(5);
+            pack->footer = buffer.at(6);
+        }
+        break;
+        case 0x63:
+        {
+
+            switch(pack->subservice)
+            {
+                case 0x11:
+                {
+                    pack->cmd = buffer.at(4);
+                    switch(pack->cmd){
+                        case 0x3:
+                        case 0x9:
+                        case 0xa:{
+                            Bytes2Short tran;
+                            tran.bytes[0] = (buffer.at(5)&0x7f)+((buffer.at(6)<<7)&0xf0);
+                            tran.bytes[1] = (buffer.at(7)&0x7f)+((buffer.at(8)<<7)&0xf0);
+                            pack->value = tran.value;
+                            pack->checksum = buffer.at(9);
+                            pack->footer = buffer.at(10);
+                        }
+                        break;
+                        case 0x8:{
+                            Bytes2Long tran;
+                            tran.bytes[2] = (buffer.at(5)&0x7f)+((buffer.at(6)<<7)&0xf0);
+                            tran.bytes[1] = (buffer.at(7)&0x7f)+((buffer.at(8)<<7)&0xf0);
+                            tran.bytes[0] = (buffer.at(9)&0x7f)+((buffer.at(10)<<7)&0xf0);
+                            tran.bytes[5] = (buffer.at(11)&0x7f)+((buffer.at(12)<<7)&0xf0);
+                            tran.bytes[4] = (buffer.at(13)&0x7f)+((buffer.at(14)<<7)&0xf0);
+                            tran.bytes[3] = (buffer.at(15)&0x7f)+((buffer.at(16)<<7)&0xf0);
+                            tran.bytes[6] = tran.bytes[7] = 0;
+                            pack->value = tran.value;
+                            pack->checksum = buffer.at(17);
+                            pack->footer = buffer.at(18);
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        break;
+        case 0x64:
+        {
+            switch(pack->subservice)
+            {
+                case 0xd:
+                {
+                }
+                break;
+                case 0xe:
+                {
+                    
+                }
+                break;
+            }
+        }
+        break;
+    }
+    */
